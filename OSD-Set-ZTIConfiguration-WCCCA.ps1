@@ -36,7 +36,6 @@ if ($env:SystemDrive -eq 'X:') {
 
     #Set OSDCloud Variables
     $Global:MyOSDCloud = [ordered]@{
-        Restart = [bool]$False
         WindowsUpdate = [bool]$true
         WindowsUpdateDrivers = [bool]$true
         WindowsDefenderUpdate = [bool]$true
