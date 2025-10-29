@@ -1,20 +1,5 @@
-
-# Establishing parameters for ZTI deployment with OSDCloud. 
-# Define the image file URL to be used for installation. Image is hosted on WCCCA deployment server and is accessible via HTTP. This image is a bare Windows 11 24H2 x64 install.wim file that OSDCloud will deploy 
-# to reduce network traffic and speed up deployment times.
-
-[CmdletBinding()]
-param(
-    [Parameter()]
-    [string]$ImageFileUrl = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2024H2%20x64/sources/install.wim'
-)
-
-# Establish the ZTI configuration.
-
-$startParams = @{
-    ZTI          = $true
-    ImageFileURL = $ImageFileUrl
-}
+$ScriptName = 'OSDCloud-WCCCA'
+$ScriptVersion = '25.10.7.1'
 
 # After the deployment, configure SetupComplete tasks to finalize installation in OOBE. 
 
@@ -27,18 +12,24 @@ if ($env:SystemDrive -eq 'X:') {
     Write-Host "Starting $ScriptName $ScriptVersion"
     write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
-    # Variables to define the Windows OS / Edition etc to be applied during OSDCloud
-    $Product = (Get-MyComputerProduct)
-    $Model = (Get-MyComputerModel)
-    $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
-    $OSVersion = 'Windows 11' # Used to Determine Driver Pack
-    $OSReleaseID = '24H2' # Used to Determine Driver Pack
+    # Variables to define the Windows OS and Hardware Conditions. Comment in/out variables as needed.
+    # $Product = (Get-MyComputerProduct) 
+    # $Model = (Get-MyComputerModel)
+    # $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+    $OSVersion = 'Windows 11' 
+    $OSReleaseID = '25H2' 
 
     #Set OSDCloud Variables
     $Global:MyOSDCloud = [ordered]@{
+	    Restart = [bool]$False
+	    RecoveryPartition = [bool]$true
         WindowsUpdate = [bool]$true
+	    ImageFileURL = http://deployment01.wccca.com/IPU/Media/Windows%2011%2024H2%20x64/sources/install.wim
+        ShutdownSetupComplete = [bool]$false
         WindowsUpdateDrivers = [bool]$true
         WindowsDefenderUpdate = [bool]$true
+	    ClearDiskConfirm = [bool]$false
+        CheckSHA1 = [bool]$true
     }
 
     # Determines Driver Packs 
@@ -61,7 +52,7 @@ if ($env:SystemDrive -eq 'X:') {
     # Start the OSDCloud deployment process with the specified parameters.
 
     Write-Host -ForegroundColor Green 'Starting OSDCloud deployment (ZTI)'
-    Start-OSDCloud @startParams
+    Start-OSDCloud 
 
 function New-SetupCompleteOSDCloudFiles{
     
@@ -90,9 +81,9 @@ function New-SetupCompleteOSDCloudFiles{
 
     New-Item -Path $PSFilePath -ItemType File -Force
     Add-Content -path $PSFilePath "Write-Output 'Starting SetupComplete OSDCloudWrapperDemo Script Process'"
-    Add-Content -path $PSFilePath "Write-Output 'iex (irm https://github.com/WCCCA-IT/OSD/edit/main/OSD-Set-ZTIConfiguration-WCCCA.ps1)'"
+    Add-Content -path $PSFilePath "Write-Output 'iex (irm https://raw.githubusercontent.com/WCCCA-IT/OSD/refs/heads/main/OSD-Set-ZTIConfiguration-WCCCA.ps1)'"
     Add-Content -path $PSFilePath 'if ((Test-WebConnection) -ne $true){Write-error "No Internet, Sleeping 2 Minutes" ; start-sleep -seconds 120}'
-    Add-Content -path $PSFilePath 'iex (irm https://github.com/WCCCA-IT/OSD/edit/main/OSD-Set-ZTIConfiguration-WCCCA.ps1)'
+    Add-Content -path $PSFilePath 'iex (irm https://raw.githubusercontent.com/WCCCA-IT/OSD/refs/heads/main/OSD-Set-ZTIConfiguration-WCCCA.ps1)'
 }
 
     Write-Host "==================================================" -ForegroundColor DarkGray
@@ -110,9 +101,14 @@ function New-SetupCompleteOSDCloudFiles{
         Stop-Transcript
         Copy-Item -Path $env:TEMP\$LogName -Destination C:\OSDCloud\Logs -Force
     }
+    #Restart
+    restart-computer
+}
 else {
-    <# This will happen from inside Setup Complete #>
     Write-Host "Starting $ScriptName $ScriptVersion"
     Write-Output "If you see this, then it worked! (Wrapper Script injected into SetupComplete)"
-    #IF you want to add more things to do inside of Setup Complete, add them here!
+    Write-Output "Adding WCCCA-Admin Wifi Profile"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "C:\OSDCloud\Scripts\SetupComplete\WCCCA-ADMIN.ps1" -Verbose
+    Write-Output "Removing Bloatware"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "iex (irm functions.osdcloud.com); RemoveAppx -Basic" -Verbose
 }
