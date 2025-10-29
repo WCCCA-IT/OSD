@@ -13,9 +13,9 @@ if ($env:SystemDrive -eq 'X:') {
     write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
     # Variables to define the Windows OS and Hardware Conditions. Comment in/out variables as needed.
-    # $Product = (Get-MyComputerProduct) 
-    # $Model = (Get-MyComputerModel)
-    # $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+    $Product = (Get-MyComputerProduct) 
+    $Model = (Get-MyComputerModel)
+    $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
     $OSVersion = 'Windows 11' 
     $OSReleaseID = '25H2' 
 
@@ -24,7 +24,7 @@ if ($env:SystemDrive -eq 'X:') {
 	    Restart = [bool]$False
 	    RecoveryPartition = [bool]$true
         WindowsUpdate = [bool]$true
-	    ImageFileURL = http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources//install.wim
+	    ImageFileURL = http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim
         ShutdownSetupComplete = [bool]$false
         WindowsUpdateDrivers = [bool]$true
         WindowsDefenderUpdate = [bool]$true
