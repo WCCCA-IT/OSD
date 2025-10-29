@@ -12,6 +12,12 @@ if ($env:SystemDrive -eq 'X:') {
     Write-Host "Starting $ScriptName $ScriptVersion"
     write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
+    $Product = (Get-MyComputerProduct)
+    $Model = (Get-MyComputerModel)
+    $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+    $OSVersion = 'Windows 11' #Used to Determine Driver Pack
+    $OSReleaseID = '25H2' #Used to Determine Driver Pack
+
     #Set OSDCloud Variables
     $Global:MyOSDCloud = [ordered]@{
 	    Restart = [bool]$False
@@ -27,6 +33,26 @@ if ($env:SystemDrive -eq 'X:') {
 
     Write-Host "OSDCloud Variables"
     Write-Output $Global:MyOSDCloud
+    
+        #Used to Determine Driver Pack
+    $DriverPack = Get-OSDCloudDriverPack -Product $Product -OSVersion $OSVersion -OSReleaseID $OSReleaseID
+
+    if ($DriverPack){
+        $Global:MyOSDCloud.DriverPackName = $DriverPack.Name
+    }
+    #$Global:MyOSDCloud.DriverPackName = "None"
+
+    #Enable HPIA | Update HP BIOS | Update HP TPM
+    
+    if (Test-HPIASupport){
+        Write-Host "Detected HP Device, Enabling HPIA, HP BIOS and HP TPM Updates"
+        #$Global:MyOSDCloud.DevMode = [bool]$True
+        $Global:MyOSDCloud.HPTPMUpdate = [bool]$True
+        if ($Product -ne '83B2' -and $Model -notmatch "zbook"){$Global:MyOSDCloud.HPIAALL = [bool]$true} #I've had issues with this device and HPIA
+        #{$Global:MyOSDCloud.HPIAALL = [bool]$true}
+        $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
+        #$Global:MyOSDCloud.HPCMSLDriverPackLatest = [bool]$true #In Test 
+    }
 
     # Start the OSDCloud deployment process with the specified parameters.
 
