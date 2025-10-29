@@ -12,13 +12,6 @@ if ($env:SystemDrive -eq 'X:') {
     Write-Host "Starting $ScriptName $ScriptVersion"
     write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
-    # Variables to define the Windows OS and Hardware Conditions. Comment in/out variables as needed.
-    $Product = (Get-MyComputerProduct) 
-    $Model = (Get-MyComputerModel)
-    $Manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
-    $OSVersion = 'Windows 11' 
-    $OSReleaseID = '25H2' 
-
     #Set OSDCloud Variables
     $Global:MyOSDCloud = [ordered]@{
 	    Restart = [bool]$False
@@ -30,20 +23,6 @@ if ($env:SystemDrive -eq 'X:') {
         WindowsDefenderUpdate = [bool]$true
 	    ClearDiskConfirm = [bool]$false
         CheckSHA1 = [bool]$true
-    }
-
-    # Determines Driver Packs 
-    $DriverPack = Get-OSDCloudDriverPack -Product $Product -OSVersion $OSVersion -OSReleaseID $OSReleaseID
-
-    if ($DriverPack){
-        $Global:MyOSDCloud.DriverPackName = $DriverPack.Name
-    }
-
-    if (Test-HPIASupport){
-        Write-Host "Detected HP Device, Enabling HPIA, HP BIOS and HP TPM Updates"
-        $Global:MyOSDCloud.HPTPMUpdate = [bool]$True
-        $Global:MyOSDCloud.HPIAALL = [bool]$true
-        $Global:MyOSDCloud.HPBIOSUpdate = [bool]$true
     }
 
     Write-Host "OSDCloud Variables"
