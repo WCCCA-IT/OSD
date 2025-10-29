@@ -24,7 +24,7 @@ if ($env:SystemDrive -eq 'X:') {
 	    Restart = [bool]$False
 	    RecoveryPartition = [bool]$true
         WindowsUpdate = [bool]$true
-	    ImageFileURL = http://deployment01.wccca.com/IPU/Media/Windows%2011%2024H2%20x64/sources/install.wim
+	    ImageFileURL = http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources//install.wim
         ShutdownSetupComplete = [bool]$false
         WindowsUpdateDrivers = [bool]$true
         WindowsDefenderUpdate = [bool]$true
@@ -52,7 +52,7 @@ if ($env:SystemDrive -eq 'X:') {
     # Start the OSDCloud deployment process with the specified parameters.
 
     Write-Host -ForegroundColor Green 'Starting OSDCloud deployment (ZTI)'
-    Start-OSDCloud 
+    Start-OSDCloud -ZTI
 
 function New-SetupCompleteOSDCloudFiles{
     
