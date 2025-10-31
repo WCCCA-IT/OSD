@@ -1,4 +1,4 @@
-$ScriptName = 'OSDCloud-WCCCA'
+$ScriptName = 'OSD-Set-ZTIConfiguration-WCCCA'
 $ScriptVersion = '25.10.7.1'
 
 # After the deployment, configure SetupComplete tasks to finalize installation in OOBE. 
