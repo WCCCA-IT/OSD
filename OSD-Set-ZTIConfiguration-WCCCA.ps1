@@ -1,7 +1,8 @@
 $ScriptName = 'OSD-Set-ZTIConfiguration-WCCCA'
 $ScriptVersion = '25.10.7.1'
 
-# After the deployment, configure SetupComplete tasks to finalize installation in OOBE. 
+#This script configures our Zero Touch deployment.
+#This script also performs minor configurations after deployment and in SetupComplete.
 
 if ($env:SystemDrive -eq 'X:') {
 
@@ -81,12 +82,69 @@ function New-SetupCompleteOSDCloudFiles{
         Stop-Transcript
         Copy-Item -Path $env:TEMP\$LogName -Destination C:\OSDCloud\Logs -Force
     }
+
+	#Invoke OSDCloud functions for easy removal of applications in Windows OS
+	iex (irm functions.osdcloud.com)
+	
+	$AppsToRemove = @(
+    FeedbackHub,
+    Clipchamp.Clipchamp,
+    Microsoft.BingNews,
+    Microsoft.BingSearch,
+    Microsoft.BingWeather,
+    Microsoft.GamingApp,
+    Microsoft.GetHelp,
+    Microsoft.MicrosoftOfficeHub,
+    Microsoft.MicrosoftStickyNotes,
+    Microsoft.MicrosoftSolitaireCollection,
+    Microsoft.OutlookForWindows,
+    Microsoft.Paint,
+    Microsoft.PowerAutomateDesktop,
+    Microsoft.YourPhone,
+    Microsoft.ZuneMusic,
+    MSTeams,
+    Microsoft.WindowsSoundRecorder,
+    Microsoft.XboxIdentityProvider,
+    Microsoft.XboxSpeechToTextOverlay,
+    Microsoft.Xbox.TCUI)
+
+	Removeappx $AppsToRemove
+
+	#Performing restart
+	Restart-Computer -Force
 }
+
+#This portion occurs when SetupComplete.cmd is triggered after Pre-Provisioning Autopilot. 
+#Since the endpoint will be in C: as opposed to X: in WinPE, this part of the script will trigger.
 else {
     Write-Host "Starting $ScriptName $ScriptVersion"
-    Write-Output "If you see this, then it worked! (Wrapper Script injected into SetupComplete)"
-    Write-Output "Adding WCCCA-Admin Wifi Profile"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "C:\OSDCloud\Scripts\SetupComplete\WCCCA-ADMIN.ps1" -Verbose
-    Write-Output "Removing Bloatware"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "iex (irm functions.osdcloud.com); RemoveAppx -Basic" -Verbose
+
+	#Invoke OSDCloud functions for easy removal of applications in Windows OS.
+	#Performing another pass-through as a sanity check.
+	
+	iex (irm functions.osdcloud.com)
+	
+	$AppsToRemove = @(
+    FeedbackHub,
+    Clipchamp.Clipchamp,
+    Microsoft.BingNews,
+    Microsoft.BingSearch,
+    Microsoft.BingWeather,
+    Microsoft.GamingApp,
+    Microsoft.GetHelp,
+    Microsoft.MicrosoftOfficeHub,
+    Microsoft.MicrosoftStickyNotes,
+    Microsoft.MicrosoftSolitaireCollection,
+    Microsoft.OutlookForWindows,
+    Microsoft.Paint,
+    Microsoft.PowerAutomateDesktop,
+    Microsoft.YourPhone,
+    Microsoft.ZuneMusic,
+    MSTeams,
+    Microsoft.WindowsSoundRecorder,
+    Microsoft.XboxIdentityProvider,
+    Microsoft.XboxSpeechToTextOverlay,
+    Microsoft.Xbox.TCUI)
+
+	Removeappx $AppsToRemove
 }
