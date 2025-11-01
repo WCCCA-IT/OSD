@@ -86,29 +86,34 @@ function New-SetupCompleteOSDCloudFiles{
 	#Invoke OSDCloud functions for easy removal of applications in Windows OS
 	iex (irm functions.osdcloud.com)
 	
-	$AppsToRemove = @(
-    FeedbackHub,
-    Clipchamp.Clipchamp,
-    Microsoft.BingNews,
-    Microsoft.BingSearch,
-    Microsoft.BingWeather,
-    Microsoft.GamingApp,
-    Microsoft.GetHelp,
-    Microsoft.MicrosoftOfficeHub,
-    Microsoft.MicrosoftStickyNotes,
-    Microsoft.MicrosoftSolitaireCollection,
-    Microsoft.OutlookForWindows,
-    Microsoft.Paint,
-    Microsoft.PowerAutomateDesktop,
-    Microsoft.YourPhone,
-    Microsoft.ZuneMusic,
-    MSTeams,
-    Microsoft.WindowsSoundRecorder,
-    Microsoft.XboxIdentityProvider,
-    Microsoft.XboxSpeechToTextOverlay,
-    Microsoft.Xbox.TCUI)
+		# OSDCloud RemoveAppx
+# OSDCloud RemoveAppx
+$AppsToRemove = @(
+  'Clipchamp.Clipchamp'
+  'FeedbackHub'
+  'Microsoft.BingNews'
+  'Microsoft.BingSearch'
+  'Microsoft.BingWeather'
+  'Microsoft.GamingApp'
+  'Microsoft.GetHelp'
+  'Microsoft.MicrosoftOfficeHub'
+  'Microsoft.MicrosoftSolitaireCollection'
+  'Microsoft.MicrosoftStickyNotes'
+  'Microsoft.OutlookForWindows'
+  'Microsoft.Paint'
+  'Microsoft.PowerAutomateDesktop'
+  'Microsoft.WindowsSoundRecorder'
+  'Microsoft.Xbox.TCUI'
+  'Microsoft.XboxIdentityProvider'
+  'Microsoft.XboxSpeechToTextOverlay'
+  'Microsoft.YourPhone'
+  'Microsoft.ZuneMusic'
+  'MSTeams'
+)
 
-	Removeappx $AppsToRemove
+RemoveAppx -Name $AppsToRemove
+
+
 
 	#Performing restart
 	Restart-Computer -Force
@@ -124,27 +129,30 @@ else {
 	
 	iex (irm functions.osdcloud.com)
 	
-	$AppsToRemove = @(
-    FeedbackHub,
-    Clipchamp.Clipchamp,
-    Microsoft.BingNews,
-    Microsoft.BingSearch,
-    Microsoft.BingWeather,
-    Microsoft.GamingApp,
-    Microsoft.GetHelp,
-    Microsoft.MicrosoftOfficeHub,
-    Microsoft.MicrosoftStickyNotes,
-    Microsoft.MicrosoftSolitaireCollection,
-    Microsoft.OutlookForWindows,
-    Microsoft.Paint,
-    Microsoft.PowerAutomateDesktop,
-    Microsoft.YourPhone,
-    Microsoft.ZuneMusic,
-    MSTeams,
-    Microsoft.WindowsSoundRecorder,
-    Microsoft.XboxIdentityProvider,
-    Microsoft.XboxSpeechToTextOverlay,
-    Microsoft.Xbox.TCUI)
+# OSDCloud RemoveAppx
+$AppsToRemove = @(
+  'Clipchamp.Clipchamp'
+  'FeedbackHub'
+  'Microsoft.BingNews'
+  'Microsoft.BingSearch'
+  'Microsoft.BingWeather'
+  'Microsoft.GamingApp'
+  'Microsoft.GetHelp'
+  'Microsoft.MicrosoftOfficeHub'
+  'Microsoft.MicrosoftSolitaireCollection'
+  'Microsoft.MicrosoftStickyNotes'
+  'Microsoft.OutlookForWindows'
+  'Microsoft.Paint'
+  'Microsoft.PowerAutomateDesktop'
+  'Microsoft.WindowsSoundRecorder'
+  'Microsoft.Xbox.TCUI'
+  'Microsoft.XboxIdentityProvider'
+  'Microsoft.XboxSpeechToTextOverlay'
+  'Microsoft.YourPhone'
+  'Microsoft.ZuneMusic'
+  'MSTeams'
+)
 
-	Removeappx $AppsToRemove
+RemoveAppx -Name $AppsToRemove
+
 }
