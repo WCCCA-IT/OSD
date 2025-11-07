@@ -6,6 +6,50 @@ $ScriptVersion = '25.10.7.1'
 
 if ($env:SystemDrive -eq 'X:') {
 
+	# === Guardrail prompts ===
+	function Ask-YesNo {
+	    param([Parameter(Mandatory)][string]$Question)
+	    do {
+	        $a = (Read-Host "$Question (y/n)").Trim()
+	    } until ($a -match '^[yYnN]$')
+	    return $a -match '^[yY]$'
+	}
+
+	function Invoke-Shutdown {
+	    param([int]$DelaySeconds = 5)
+	    Write-Host "Shutting down in $DelaySeconds seconds."
+	    Start-Process -FilePath "$env:WINDIR\System32\shutdown.exe" -ArgumentList "/s /t $DelaySeconds" -WindowStyle Hidden
+	    Start-Sleep -Seconds $DelaySeconds
+	    exit 0
+	}
+
+	Write-Host "Welcome IT Professional. You're about to deploy WCCCA's current Windows 11 OS to this device."
+	
+	# Q1: Image this device?
+	if (-not (Ask-YesNo "Are you wanting to image this device with Windows 11?")) {
+	    Write-Host "May have just saved yourself a world of headache. Shutting down now."
+	    Invoke-Shutdown -DelaySeconds 5
+	}
+	
+	# Q2: New device to Nebula DN?
+	$IsNewDevice = Ask-YesNo "Is this a new device that has never been in our Nebula Defined Networking solution before?"
+
+	if (-not $IsNewDevice) {
+	    # Q3: Prior host data removed?
+	    $RemovedData = Ask-YesNo "This device will be registered to our Defined Networking solution and in our Infoblox DNS. Any previous host data must be removed before proceeding. Have you removed the previous host data from Defined Networking and Infoblox DNS?"
+	
+	    if (-not $RemovedData) {
+	        Write-Host "No worries. When you have done so, hit (y) to proceed. Otherwise, hit (n) to exit."
+	        if (-not (Ask-YesNo "Proceed now?")) {
+	            Invoke-Shutdown -DelaySeconds 5
+	        }
+	    }
+	}
+
+# Continue with deployment logic
+
+	Write-Host "Excellent. Starting deployment. This could take some time."
+	
     # Create a log file for the SetupComplete process.
     $LogName = "OSDCloudDeployment-$((Get-Date).ToString('yyyy-MM-dd-HHmmss')).log"
     Start-Transcript -Path $env:TEMP\$LogName -Append -Force
@@ -16,7 +60,6 @@ if ($env:SystemDrive -eq 'X:') {
     #Set OSDCloud Variables
     $Global:MyOSDCloud = [ordered]@{
         ImageFileURL = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim'
-	    Restart = [bool]$False
         OEMActivation = [bool]$True
 	    RecoveryPartition = [bool]$true
         WindowsUpdate = [bool]$true
@@ -111,9 +154,7 @@ $AppsToRemove = @(
   'MSTeams'
 )
 
-RemoveAppx -Name $AppsToRemove
-
-
+	RemoveAppx -Name $AppsToRemove
 
 	#Performing restart
 	Restart-Computer -Force
