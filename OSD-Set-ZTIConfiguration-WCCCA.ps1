@@ -60,6 +60,7 @@ if ($env:SystemDrive -eq 'X:') {
     #Set OSDCloud Variables
     $Global:MyOSDCloud = [ordered]@{
         ImageFileURL = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim'
+		Reboot = [bool]$False
         OEMActivation = [bool]$True
 	    RecoveryPartition = [bool]$true
         WindowsUpdate = [bool]$true
