@@ -1,3 +1,25 @@
+<# 
+.SYNOPSIS
+    Configure OSDCloud Zero Touch (ZTI) deployment behavior for WCCCA and run post-deploy cleanup.
+
+.DESCRIPTION
+    - When running in WinPE (SystemDrive = X:): 
+        * Starts a transcript, sets OSDCloud ZTI variables, launches ZTI, 
+          writes SetupComplete cmd/ps1 wrappers, copies logs and CMTrace, 
+          removes unwanted Appx packages, then restarts.
+    - When running in full OS (SystemDrive = C: or other):
+        * Performs a second pass of Appx removal for sanity.
+
+.NOTES
+    Script Name   : OSD-Set-ZTIConfiguration-WCCCA
+    Script Version: 25.10.7.1
+    Execution
+        - The SetupComplete wrapper calls this script directly from GitHub.
+        - Requires internet connectivity for irm calls and OSDCloud functions.
+    Logging
+        - Transcript is created only in WinPE phase and copied to C:\OSDCloud\Logs.
+#>
+
 $ScriptName = 'OSD-Set-ZTIConfiguration-WCCCA'
 $ScriptVersion = '25.10.7.1'
 
@@ -13,19 +35,20 @@ if ($env:SystemDrive -eq 'X:') {
     Write-Host "Starting $ScriptName $ScriptVersion"
     write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
-	$Global:MyOSDCloud = [ordered]@{
-	    ImageFileURL = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim'
-	    Restart = [bool]$false  #Disables OSDCloud automatically restarting; we want restart to happen after all of 'if' function
-	    RecoveryPartition = [bool]$true #Ensures a Recover partition is created, True is default unless on VM
-	    OEMActivation = [bool]$True #Attempts to look up the Windows Code in UEFI and activate Windows OS (SetupComplete Phase)
-	    WindowsUpdate = [bool]$true #Runs Windows Updates during Setup Complete
-	    WindowsUpdateDrivers = [bool]$true #Runs WU for Drivers during Setup Complete
-	    WindowsDefenderUpdate = [bool]$true #Run Defender Platform and Def updates during Setup Complete
-	    SetTimeZone = [bool]$False #Set the Timezone based on the IP Address
-	    ClearDiskConfirm = [bool]$False #Skip the Confirmation for wiping drive before format
-	    ShutdownSetupComplete = [bool]$false #After Setup Complete, instead of Restarting to OOBE, just Shutdown
-	    SyncMSUpCatDriverUSB = [bool]$false #Sync any MS Update Drivers during WinPE to Flash Drive, saves time in future runs
-	}
+    # Define OSDCloud ZTI behavior. These keys influence actions during WinPE and SetupComplete.
+    $Global:MyOSDCloud = [ordered]@{
+        ImageFileURL            = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim' # Install image to apply
+        Restart                 = [bool]$false  # Let the wrapper own restarts; OSDCloud will not auto-restart
+        RecoveryPartition       = [bool]$true   # Ensure a recovery partition exists (default true except on VMs)
+        OEMActivation           = [bool]$True   # Attempt OEM activation via UEFI MSDM table during SetupComplete
+        WindowsUpdate           = [bool]$true   # Apply Windows Updates during SetupComplete
+        WindowsUpdateDrivers    = [bool]$true   # Pull driver updates from WU during SetupComplete
+        WindowsDefenderUpdate   = [bool]$true   # Update Defender platform and signatures during SetupComplete
+        SetTimeZone             = [bool]$False  # Skip geo-IP timezone set; managed elsewhere
+        ClearDiskConfirm        = [bool]$False  # Skip wipe confirmation for fully unattended runs
+        ShutdownSetupComplete   = [bool]$false  # After SetupComplete, proceed to OOBE (no shutdown)
+        SyncMSUpCatDriverUSB    = [bool]$false  # Do not cache drivers to USB during WinPE
+    }
 
     Write-Host "OSDCloud Variables"
     Write-Output $Global:MyOSDCloud
@@ -36,7 +59,14 @@ if ($env:SystemDrive -eq 'X:') {
     Start-OSDCloud -ZTI
 
 function New-SetupCompleteOSDCloudFiles{
-    
+    <#
+		.SYNOPSIS
+            Create SetupComplete wrappers that call the latest script from GitHub post-deployment.
+        .DETAILS
+    	    - Writes SetupComplete.cmd to invoke SetupComplete.ps1 with ExecutionPolicy bypass.
+			- Writes SetupComplete.ps1 that fetches and runs this script from GitHub.
+            - Backs up any existing SetupComplete.ps1.
+    #>
     $SetupCompletePath = "C:\OSDCloud\Scripts\SetupComplete"
     $ScriptsPath = $SetupCompletePath
 
@@ -69,7 +99,7 @@ function New-SetupCompleteOSDCloudFiles{
 
     Write-Host "==================================================" -ForegroundColor DarkGray
     Write-Host "OSDCloud Process Complete, Running Custom Actions From Script Before Reboot" -ForegroundColor Magenta
-    Write-Host "Creating Custom SetupComplete Files for WCCCA" -ForegroundColor Cyan
+    Write-Host "Creating Custom SetupComplete Files for this deployment" -ForegroundColor Cyan
 
     New-SetupCompleteOSDCloudFiles
     #Copy CMTrace Local if in WinPE Media
@@ -83,74 +113,71 @@ function New-SetupCompleteOSDCloudFiles{
         Copy-Item -Path $env:TEMP\$LogName -Destination C:\OSDCloud\Logs -Force
     }
 
-	#Invoke OSDCloud functions for easy removal of applications in Windows OS
-	iex (irm functions.osdcloud.com)
-	
-		# OSDCloud RemoveAppx
-# OSDCloud RemoveAppx
-$AppsToRemove = @(
-  'Clipchamp.Clipchamp'
-  'FeedbackHub'
-  'Microsoft.BingNews'
-  'Microsoft.BingSearch'
-  'Microsoft.BingWeather'
-  'Microsoft.GamingApp'
-  'Microsoft.GetHelp'
-  'Microsoft.MicrosoftOfficeHub'
-  'Microsoft.MicrosoftSolitaireCollection'
-  'Microsoft.MicrosoftStickyNotes'
-  'Microsoft.OutlookForWindows'
-  'Microsoft.Paint'
-  'Microsoft.PowerAutomateDesktop'
-  'Microsoft.WindowsSoundRecorder'
-  'Microsoft.Xbox.TCUI'
-  'Microsoft.XboxIdentityProvider'
-  'Microsoft.XboxSpeechToTextOverlay'
-  'Microsoft.YourPhone'
-  'Microsoft.ZuneMusic'
-  'MSTeams'
-)
+    # Load OSDCloud helper functions into session to remove inbox apps by name.
+    iex (irm functions.osdcloud.com)
 
-	RemoveAppx -Name $AppsToRemove
+    # Appx packages to remove for a leaner base image. Names map to Appx package family names used by RemoveAppx.
+    $AppsToRemove = @(
+        'Clipchamp.Clipchamp'
+        'FeedbackHub'
+        'Microsoft.BingNews'
+        'Microsoft.BingSearch'
+        'Microsoft.BingWeather'
+        'Microsoft.GamingApp'
+        'Microsoft.GetHelp'
+        'Microsoft.MicrosoftOfficeHub'
+        'Microsoft.MicrosoftSolitaireCollection'
+        'Microsoft.MicrosoftStickyNotes'
+        'Microsoft.OutlookForWindows'
+        'Microsoft.Paint'
+        'Microsoft.PowerAutomateDesktop'
+        'Microsoft.WindowsSoundRecorder'
+        'Microsoft.Xbox.TCUI'
+        'Microsoft.XboxIdentityProvider'
+        'Microsoft.XboxSpeechToTextOverlay'
+        'Microsoft.YourPhone'
+        'Microsoft.ZuneMusic'
+        'MSTeams'
+    )
 
-	#Performing restart
-	Restart-Computer -Force
+    # Remove selected Appx packages in WinPE phase before reboot to OOBE.
+    RemoveAppx -Name $AppsToRemove
+
+    # Hand control back to OOBE by forcing a restart.
+    Restart-Computer -Force
 }
 
-#This portion occurs when SetupComplete.cmd is triggered after Pre-Provisioning Autopilot. 
-#Since the endpoint will be in C: as opposed to X: in WinPE, this part of the script will trigger.
 else {
+    # In full OS. SetupComplete.cmd invoked this branch. Perform a second pass of app cleanup.
     Write-Host "Starting $ScriptName $ScriptVersion"
 
-	#Invoke OSDCloud functions for easy removal of applications in Windows OS.
-	#Performing another pass-through as a sanity check.
-	
-	iex (irm functions.osdcloud.com)
-	
-# OSDCloud RemoveAppx
-$AppsToRemove = @(
-  'Clipchamp.Clipchamp'
-  'FeedbackHub'
-  'Microsoft.BingNews'
-  'Microsoft.BingSearch'
-  'Microsoft.BingWeather'
-  'Microsoft.GamingApp'
-  'Microsoft.GetHelp'
-  'Microsoft.MicrosoftOfficeHub'
-  'Microsoft.MicrosoftSolitaireCollection'
-  'Microsoft.MicrosoftStickyNotes'
-  'Microsoft.OutlookForWindows'
-  'Microsoft.Paint'
-  'Microsoft.PowerAutomateDesktop'
-  'Microsoft.WindowsSoundRecorder'
-  'Microsoft.Xbox.TCUI'
-  'Microsoft.XboxIdentityProvider'
-  'Microsoft.XboxSpeechToTextOverlay'
-  'Microsoft.YourPhone'
-  'Microsoft.ZuneMusic'
-  'MSTeams'
-)
+    # Load OSDCloud helper functions again in the full OS context.
+    iex (irm functions.osdcloud.com)
 
-RemoveAppx -Name $AppsToRemove
+    # Same removal list as in WinPE to ensure drift is corrected.
+    $AppsToRemove = @(
+        'Clipchamp.Clipchamp'
+        'FeedbackHub'
+        'Microsoft.BingNews'
+        'Microsoft.BingSearch'
+        'Microsoft.BingWeather'
+        'Microsoft.GamingApp'
+        'Microsoft.GetHelp'
+        'Microsoft.MicrosoftOfficeHub'
+        'Microsoft.MicrosoftSolitaireCollection'
+        'Microsoft.MicrosoftStickyNotes'
+        'Microsoft.OutlookForWindows'
+        'Microsoft.Paint'
+        'Microsoft.PowerAutomateDesktop'
+        'Microsoft.WindowsSoundRecorder'
+        'Microsoft.Xbox.TCUI'
+        'Microsoft.XboxIdentityProvider'
+        'Microsoft.XboxSpeechToTextOverlay'
+        'Microsoft.YourPhone'
+        'Microsoft.ZuneMusic'
+        'MSTeams'
+    )
 
+    # Remove selected Appx packages in the full OS in case any reappeared or failed to remove earlier.
+    RemoveAppx -Name $AppsToRemove
 }
