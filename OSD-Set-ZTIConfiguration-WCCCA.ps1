@@ -13,19 +13,19 @@ if ($env:SystemDrive -eq 'X:') {
     Write-Host "Starting $ScriptName $ScriptVersion"
     write-host "Added Function New-SetupCompleteOSDCloudFiles" -ForegroundColor Green
 
-    #Set OSDCloud Variables
-    $Global:MyOSDCloud = [ordered]@{
-        ImageFileURL = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim'
-		Reboot = [bool]$False
-        OEMActivation = [bool]$True
-	    RecoveryPartition = [bool]$true
-        WindowsUpdate = [bool]$true
-        ShutdownSetupComplete = [bool]$true
-        WindowsUpdateDrivers = [bool]$true
-        WindowsDefenderUpdate = [bool]$true
-	    ClearDiskConfirm = [bool]$false
-        CheckSHA1 = [bool]$true
-    }
+	$Global:MyOSDCloud = [ordered]@{
+	    ImageFileURL = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim'
+	    Restart = [bool]$false  #Disables OSDCloud automatically restarting; we want restart to happen after all of 'if' function
+	    RecoveryPartition = [bool]$true #Ensures a Recover partition is created, True is default unless on VM
+	    OEMActivation = [bool]$True #Attempts to look up the Windows Code in UEFI and activate Windows OS (SetupComplete Phase)
+	    WindowsUpdate = [bool]$true #Runs Windows Updates during Setup Complete
+	    WindowsUpdateDrivers = [bool]$true #Runs WU for Drivers during Setup Complete
+	    WindowsDefenderUpdate = [bool]$true #Run Defender Platform and Def updates during Setup Complete
+	    SetTimeZone = [bool]$False #Set the Timezone based on the IP Address
+	    ClearDiskConfirm = [bool]$False #Skip the Confirmation for wiping drive before format
+	    ShutdownSetupComplete = [bool]$false #After Setup Complete, instead of Restarting to OOBE, just Shutdown
+	    SyncMSUpCatDriverUSB = [bool]$false #Sync any MS Update Drivers during WinPE to Flash Drive, saves time in future runs
+	}
 
     Write-Host "OSDCloud Variables"
     Write-Output $Global:MyOSDCloud
