@@ -116,6 +116,16 @@ function New-SetupCompleteOSDCloudFiles{
     # Load OSDCloud helper functions into session to remove inbox apps by name.
     iex (irm functions.osdcloud.com)
 
+	$AutopilotParams = @{
+    Online = $true
+    TenantId = '109c7a39-3998-4b2b-b6d7-56f02b27eec0'
+    AppId = 'b7284c30-50f0-4330-95e1-b13c276331ba'
+    AppSecret = 'sX38Q~pHfvabE7.H-Bf5vQNEJw~PciHzrfAK-c7G'
+    GroupTag = 'IT'
+	}
+	
+	Get-WindowsAutoPilotInfo @AutopilotParams
+	
     # Appx packages to remove for a leaner base image. Names map to Appx package family names used by RemoveAppx.
     $AppsToRemove = @(
         'Clipchamp.Clipchamp'
@@ -154,6 +164,17 @@ else {
     # Load OSDCloud helper functions again in the full OS context.
     iex (irm functions.osdcloud.com)
 
+	#Register for Autopilot
+	$AutopilotParams = @{
+    Online = $true
+    TenantId = '109c7a39-3998-4b2b-b6d7-56f02b27eec0'
+    AppId = 'b7284c30-50f0-4330-95e1-b13c276331ba'
+    AppSecret = 'sX38Q~pHfvabE7.H-Bf5vQNEJw~PciHzrfAK-c7G'
+    GroupTag = 'IT'
+	}
+	
+	Get-WindowsAutoPilotInfo @AutopilotParams
+	
     # Same removal list as in WinPE to ensure drift is corrected.
     $AppsToRemove = @(
         'Clipchamp.Clipchamp'
