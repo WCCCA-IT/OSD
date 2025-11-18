@@ -37,7 +37,7 @@ if ($env:SystemDrive -eq 'X:') {
 
     # Define OSDCloud ZTI behavior. These keys influence actions during WinPE and SetupComplete.
     $Global:MyOSDCloud = [ordered]@{
-        ImageFileURL            = 'http://deployment01.wccca.com/IPU/Media/Windows%2011%2025H2%20x64/sources/install.wim' # Install image to apply
+        ImageFileURL            = # Install image to apply
         Restart                 = [bool]$false  # Let the wrapper own restarts; OSDCloud will not auto-restart
         RecoveryPartition       = [bool]$true   # Ensure a recovery partition exists (default true except on VMs)
         OEMActivation           = [bool]$True   # Attempt OEM activation via UEFI MSDM table during SetupComplete
@@ -115,16 +115,6 @@ function New-SetupCompleteOSDCloudFiles{
 
     # Load OSDCloud helper functions into session to remove inbox apps by name.
     iex (irm functions.osdcloud.com)
-
-	$AutopilotParams = @{
-    Online = $true
-    TenantId = '109c7a39-3998-4b2b-b6d7-56f02b27eec0'
-    AppId = 'b7284c30-50f0-4330-95e1-b13c276331ba'
-    AppSecret = 'sX38Q~pHfvabE7.H-Bf5vQNEJw~PciHzrfAK-c7G'
-    GroupTag = 'IT'
-	}
-	
-	Get-WindowsAutoPilotInfo @AutopilotParams
 	
     # Appx packages to remove for a leaner base image. Names map to Appx package family names used by RemoveAppx.
     $AppsToRemove = @(
